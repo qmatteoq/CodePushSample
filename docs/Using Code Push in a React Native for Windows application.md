@@ -11,7 +11,8 @@ Enabling Code Push requires to interact with three different layers:
 
 [The native module](https://github.com/microsoft/react-native-code-push/) has recently added support for the Windows implementation of React Native. However, App Center still lacks support for this technology on Windows and, today, when you create a new Windows application on App Center, React Native isn't one of the available options. This means that the infrastructure needed to support Code Push won't be available. In this article we're going to see how we can configure our Windows application to use Code Push, even if it isn't fully supported by App Center.
 
-### Setting up App Center
+## Setting up App Center
+
 The first task is to create a new application in Visual Studio App Center. Thes starting point is the [App Center website](https://appcenter.ms/), where you can login to your dashboard. If you don't already have an account, you can create a free one the first time you login using your Microsoft Account, work account, GitHub, Facebook or Google account.
 Once you are logged in, click on **Add new** and choose **Add new app**.
 
@@ -25,12 +26,12 @@ However, as previously mentioned, if you choose **Windows** you won't see React 
 
 As such, choose **Android** as OS and **React Native** as Platform, then create the application. Since you have chosen React Native, you should see now a section called **CodePush** in the Distribute section:
 
-![](Images/CodePush-AppCenter.png)
+![](images/CodePush-AppCenter.png)
 
 In CodePush you can configure multiple deployments slot, to manage different versions of the application (production, staging, etc.). By clicking on **Create standard deployments** App Center will create by defaults two environments: Staging and Production. By clicking on the wrench icon at the top, you will be able to add new ones. 
 Each environment has a dedicated key, which is critical to setup CodePush in the application. For the moment, let's assume that we're going to work with the staging version of the app, so copy the key for that environment and keep it for the next steps.
 
-![](Images/Environments.png)
+![](images/Environments.png)
 
 The last step is to install the App Center CLI, which provides the commands you will need to push the bundle updates to the App Center servers. To install it, open a prompt on your machine and run the following command:
 
@@ -46,7 +47,8 @@ appcenter login
 
 Now we can start integrating the SDK in our React Native app.
 
-### Integrating the SDK
+## Integrating the SDK
+
 The SDK is available as a React Native native module, which fully supports autolinking on Windows as well. As such, the first step is to install the module. Move to the root of your React Native project and run the following command in a terminal:
 
 ```powershell
@@ -62,7 +64,7 @@ npx react-native autolink-windows
 Now open in Visual Studio the solution in the **windows** folder (it will have the same name of your project, plus the .sln extension).
 If you have performed the autolinking properly, the solution will look like this:
 
-![](Images/SolutionExplorer.png)
+![](images/SolutionExplorer.png)
 
 In the previous image, **codepushsample** is the main application which acts as a React Native host (in this case it's based on C#, but it can be C++ as well), while **CodePush** is the SDK referenced by the main app.
 The next step is to change the implementation of the `OnLaunched` event, which takes care of initializing the app. **This is a very important step**: it won't be enough to add the code to initialize CodePush, but you have also to make the below changes in the initialization; otherwise, the application won't behave properly and, most of the times, launching it will result in an empty canvas, without any content.
@@ -204,7 +206,8 @@ The reason is that, when you're debugging a React Native application, the Metro 
 
 To generate a relase version of the package, you can follow [this guidance](https://microsoft.github.io/react-native-windows/docs/getting-started#building-a-standalone-react-native-windows-app).
 
-### Integrating the JavaScript APIs
+## Integrating the JavaScript APIs
+
 Now we are ready to start setting up CodePush in the JavaScript layer of the application. The key to enable it is to wrap the main `App` class or function (based on the approach you're using) inside the `codePush` one, like in the following examples:
 
 ```javascript
@@ -259,18 +262,18 @@ This is the meaning of the various parameters:
 
 - `-a` is the application you have registed on App Center. The parameter is made by the name of your account / the name of the application. You can find them in your URL of your browser, when you have the dashboard opened on the app:
 
-    ![](Images/url.png)
-    
+    ![](images/url.png)
+
 - `-c` is the path which contains the bundle you want to publish. In our case, it's the `Bundle` folder which we have previously created.
 - `-t` is the version number of the app this bundle refers to.
 
 After a few seconds, you should see a confirmation that the bundle has been succesfully uploaded. You can check that the operation was succesfull by logging in to the App Center dashboard of your application. You should see all the releases you have published in the CodePush section:
 
-![](Images/CodePush-Releases.png)
+![](images/CodePush-Releases.png)
 
 You will be able to see different statistics about each release, like the number of users who have downloaded and installed the update:
 
-![](Images/ReleaseDetail.png)
+![](images/ReleaseDetail.png)
 
 Now you should be able to see CodePush in action by following these steps:
 
@@ -294,15 +297,17 @@ appcenter codepush release -a mpagani/CodePushSample -c .\Bundle -t 1.0.0 --roll
 
 You can find all the parameters documented [here](https://github.com/microsoft/code-push/tree/v3.0.1/cli#releasing-updates-general). In case you have already pushed an update and you want to change its configuration, you can use the App Center dashboard. By clicking on the wrench icon inside a release page, you will be able to customize it:
 
-![](Images/ConfigureUpdate.png)
+![](images/ConfigureUpdate.png)
 
-### Customizing the update behavior
+## Customizing the update behavior
+
 The CodePush APIs give you lot of flexibility in deciding how you want to manage updates. The previous implementation you have tested is the default one, but there are other alternatives.
 
-#### Show a prompt to the user
+### Show a prompt to the user
+
 With this approach, the check for updates still happens when the application starts, but the package won't be automatically downloaded and installed. The user will be prompted if they want to move on or cancel it (unless it was marked as mandatory when you have published the bundle).
 
-![](Images/UpdatePrompt.png)
+![](images/UpdatePrompt.png)
 
 To achieve this goal, you can pass the following options when you initialize the `codePush` function:
 
@@ -318,7 +323,8 @@ App = codePush({ updateDialog: true, installMode: codePush.InstallMode.IMMEDIATE
 export default App;
 ```
 
-#### Handle updates manually
+### Handle updates manually
+
 You can also choose to disable automatic updates and provide a manual way to the user to check and install them, for example via a button. The first step is to pass `CheckFrequency.MANUAL` as option in the `codePush()` function to disable automatic updates:
 
 ```javascript
@@ -344,7 +350,8 @@ const onCheckUpdates = async () => {
 }
 ```
 
-#### Track the download progress
+### Track the download progress
+
 CodePush provides a series of events to track the status of the installation. The only caveat is that, at the moment of writing, they are exposed only through class components.
 This is an example of the implementation:
 
@@ -380,7 +387,8 @@ export default App;
 
 The `codePushStatusDidChange()` event is raised when the status of the update changes. It can assume one of the values exposed by the `SyncStatus` enumerator. The `codePushDownloadDidProgress()` event, instead, is raised when the download has started and, through the `progress` object, you can get the current status, in case you want to display a progress bar or another similar approach.
 
-### Wrapping up
+## Wrapping up
+
 Thanks to CodePush, you can be more agile in keeping your application up-to-date and deliver new features without having to redeploy a completely new package. Currently, App Center doesn't fully support the React Native for Windows implementation, but with a few workarounds you can still leverage it. I hihgly invite you to read [the whole README of the main repository](https://github.com/microsoft/react-native-code-push/blob/master/README.md), since it contains many additional information for advanced scenarios, like how to handle Store policies, how to manage multiple deployment assignments, etc.
 [Here](https://github.com/microsoft/react-native-code-push/blob/master/docs/api-js.md), instead, you can find an overview of the JavaScript API, with many details on how to customize the update experience.
 If you're looking for an example with a C++ based host app, you can refer to [the official one](https://github.com/microsoft/react-native-code-push/tree/master/Examples/CodePushDemoApp). A C# version of the sample, instead, can be found [here](https://github.com/qmatteoq/CodePushSample).
