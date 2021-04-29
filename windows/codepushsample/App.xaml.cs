@@ -1,5 +1,6 @@
 ﻿using Microsoft.ReactNative;
 using System.Collections.Generic;
+using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -43,7 +44,7 @@ namespace codepushsample
         {
             Microsoft.CodePush.ReactNative.CodePushConfig.SetHost(Host);
             Dictionary<string, string> configMap = new Dictionary<string, string>();
-            configMap.Add("appVersion", "1.0.0");
+            configMap.Add("appVersion", $"{Package.Current.Id.Version.Major}.{Package.Current.Id.Version.Minor}.{Package.Current.Id.Version.Build}");
             configMap.Add("deploymentKey", "pW0cceCk7YtRT3zdhnuJpMnQWwGZorxbfEwOr");
             Microsoft.CodePush.ReactNative.CodePushConfig.Init(configMap);
 

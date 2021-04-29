@@ -1,7 +1,7 @@
 # Using CodePush in a React Native for Windows application
 CodePush is a service built by Microsoft, now incorporated into the [Visual Studio App Center platform](https://appcenter.ms/), which provides a way for React Native and Cordova developers to be more agile in delivering updates to their applications.
 Thanks to CodePush, you are able to deliver a new bundle (which might contain updated JavaScript files, new images, etc.) without having to fully redeploy a new package. This means, for example, that you can update the content of your application published on a Store without submitting a new package and waiting for the certification process to be completed; or that you can add a new feature in your LOB app without having to redeploy it via Intune or another MDM solution to all your employees.
-The only caveat is that the feature works only for updates which involves the bundle, which means changes in the JavaScript code, a new asset, etc. If the update involves changes in the binary package (like adding a new capability in the manifest or integrating a new native module), then you are required to submit a new package using the standard approach. 
+The only caveat is that **the feature works only for updates which involves the bundle**, which means changes in the JavaScript code, a new asset, etc. If the update involves changes in the binary package (like adding a new capability in the manifest or integrating a new native module), then you are required to submit a new package using the standard approach. 
 
 Enabling Code Push requires to interact with three different layers:
 
@@ -9,7 +9,7 @@ Enabling Code Push requires to interact with three different layers:
 2. A native module, which must be integrated in the React Native application.
 3. A set of JavaScript APIs, which you must integrate in the JavaScript layer of your application to manage the update lifecycle.
 
-[The native module](https://github.com/microsoft/react-native-code-push/) has recently added support for the Windows implementation of React Native. However, App Center still lacks support for this technology on Windows and, today, when you create a new Windows application on App Center, React Native isn't one of the available options. This means that the infrastructure needed to support Code Push won't be available. In this article we're going to see how we can configure our Windows application to use Code Push, even if it isn't fully supported by App Center.
+CodePush initially supported only iOS and Android, but [the native module](https://github.com/microsoft/react-native-code-push/) has recently added support for the Windows implementation of React Native as well. However, App Center still lacks support for this technology on Windows and, today, when you create a new Windows application on App Center, React Native isn't one of the available options. This means that the infrastructure needed to support CodePush won't be available. In this article we're going to see how we can configure our Windows application to use Code Push, even if it isn't fully supported by App Center.
 
 ## Setting up App Center
 
@@ -29,7 +29,7 @@ As such, choose **Android** as OS and **React Native** as Platform, then create 
 ![](images/CodePush-AppCenter.png)
 
 In CodePush you can configure multiple deployments slot, to manage different versions of the application (production, staging, etc.). By clicking on **Create standard deployments** App Center will create by defaults two environments: Staging and Production. By clicking on the wrench icon at the top, you will be able to add new ones. 
-Each environment has a dedicated key, which is critical to setup CodePush in the application. For the moment, let's assume that we're going to work with the staging version of the app, so copy the key for that environment and keep it for the next steps.
+Each environment has a dedicated key, which is required to setup CodePush in the application. For the moment, let's assume that we're going to work with the staging version of the app, so copy the key for that environment and keep it for the next steps.
 
 ![](images/Environments.png)
 
@@ -67,7 +67,7 @@ If you have performed the autolinking properly, the solution will look like this
 ![](images/SolutionExplorer.png)
 
 In the previous image, **codepushsample** is the main application which acts as a React Native host (in this case it's based on C#, but it can be C++ as well), while **CodePush** is the SDK referenced by the main app.
-The next step is to change the implementation of the `OnLaunched` event, which takes care of initializing the app. **This is a very important step**: it won't be enough to add the code to initialize CodePush, but you have also to make the below changes in the initialization; otherwise, the application won't behave properly and, most of the times, launching it will result in an empty canvas, without any content.
+The next step is to change the implementation of the `OnLaunched` event, which takes care of initializing the app. **This is a very important step**: it won't be enough to add the code to initialize CodePush, but you have also to make the below changes in the initialization; otherwise, the application won't behave properly and, most of the times, launching it will result in a blank screen or a frozen app.
 
 If you have opted for an host application based on C# (so you have initialized React Native for Windows with the `--language cs` parameter), you will find the `OnLaunched` implementation in the `App.xaml.cs` file. You will have to replace it with the following code:
 
@@ -201,8 +201,9 @@ Microsoft.CodePush.ReactNative.CodePushConfig.Init(configMap);
 
 `appVersion` is the version number of the application and it's used to determine if CodePush should deliver an update or not for this version. When you publish a bundle on CodePush, in fact, you can specify which is the version of the application the bundle refers to, so that only users with that version will receive the update. `deploymentKey`, instead, is the key we have previously retrieved from App Center.
 
-That's it. Now you can deploy and run the application like a normal React Native for Windows application. You won't see any changes for the moment. However, be aware that, in order to test the implementation, you won't be able to use a debug version of the app, but you will have to generate a release AppX / MSIX package that you will have to deploy on your machine, like if you're ready to publish it on the Microsoft Store or your enteprise environment.
-The reason is that, when you're debugging a React Native application, the Metro packager is always up & running. As such, any change you're going to make to the JavaScript layer will be automatically pushed to the host app and displayed in real time. By generating and installing a release package, instead, React Native will use the built-in bundle which gets generated at build time, which contains a "snapshot" of the JavaScript layer. Any further change to the JavaScript code won't be automatically pushed.
+That's it. Now you can deploy and run the application like a normal React Native for Windows application. You won't see any changes for the moment. 
+However, be aware that, in order to test the implementation, **you won't be able to use a debug version of the app**, but you will have to generate a release AppX / MSIX package and deploy it on your machine.
+The reason is that, when you're debugging a React Native application, the Metro packager is always up & running. As such, any change you're going to make to the JavaScript layer will be automatically pushed to the host app and displayed in real time, without giving you the possibility to push it as an update via CodePush.
 
 To generate a relase version of the package, you can follow [this guidance](https://microsoft.github.io/react-native-windows/docs/getting-started#building-a-standalone-react-native-windows-app).
 
@@ -234,12 +235,13 @@ App = codePush(App);
 export default App;
 ```
 
-With this basic configuration you enable the default behavior, which is searching for updates when the application starts and, if they're available, download them silently and apply them at the next restart.
+With this basic configuration you enable the default behavior: CodePush will search for updates when the application starts and, if they're available, it will download them silently and apply them at the next restart.
 Let's try it. As first step, after you have wrapped your application in the `codePush` function, you will have to generate, through Visual Studio, a new MSIX / AppX package compiled in Release mode and then install it on your machine.
 Once you have it, you can start making changes to your application. Feel free to change anything which involves the JavaScript layer: a text, a style, a component, etc.
-Once you have made the change, you will need to create a new bundle and release it on CodePush. If you follow the official guidance, you'll find that the App Center CLI has a special command called `release-react` which automatically takes care of generating the bundle and pushing it to Code Push. However, at the time of writing, the App Center CLI doesn't support Windows as a platform yet. As such, the `release-react` will generate an incorrect bundle: since, in App Center, you have configured this app as an Android app, it will generate an Android bundle.
 
-The workaround is to manually generate the bundle for Windows and then manually upload it to CodePush, using the `release` command. Let's start with the first step. Open a terminal on the root of your project and, as first step, create a folder called `Bundle` to store it:
+Once you have made the change, you will need to create a new bundle and release it on CodePush. If you follow the official guidance, you'll find that the App Center CLI has a special command called `release-react` which automatically takes care of generating the bundle and pushing it to CodePush. However, at the time of writing, the App Center CLI doesn't support Windows as a platform yet. As such, the `release-react` will generate an incorrect bundle: since, in App Center, you have configured this app as an Android app, it will generate an Android bundle.
+
+The workaround is to manually generate the bundle for Windows and then manually upload it to CodePush, using the `release` command. Let's start with the first step. Open a terminal on the root of your project and create a folder called `Bundle` to store it:
 
 ```powershell
 mkdir Bundle
@@ -260,7 +262,7 @@ appcenter codepush release -a mpagani/CodePushSample -c .\Bundle -t 1.0.0
 
 This is the meaning of the various parameters:
 
-- `-a` is the application you have registed on App Center. The parameter is made by the name of your account / the name of the application. You can find them in your URL of your browser, when you have the dashboard opened on the app:
+- `-a` is the identifier of application you have registed on App Center. The parameter is made by the name of your account / the name of the application. You can find them in your URL of your browser, when you have the dashboard opened on the app:
 
     ![](images/url.png)
 
@@ -385,12 +387,12 @@ App = codePush(MyApp);
 export default App;
 ```
 
-The `codePushStatusDidChange()` event is raised when the status of the update changes. It can assume one of the values exposed by the `SyncStatus` enumerator. The `codePushDownloadDidProgress()` event, instead, is raised when the download has started and, through the `progress` object, you can get the current status, in case you want to display a progress bar or another similar approach.
+The `codePushStatusDidChange()` event is raised when the status of the update changes. It can assume one of the values exposed by the `SyncStatus` enumerator. The `codePushDownloadDidProgress()` event, instead, is raised when the download has started and, through the `progress` object, you can get the current status, in case you want to display a progress bar or another similar control.
 
 ## Wrapping up
 
-Thanks to CodePush, you can be more agile in keeping your application up-to-date and deliver new features without having to redeploy a completely new package. Currently, App Center doesn't fully support the React Native for Windows implementation, but with a few workarounds you can still leverage it. I hihgly invite you to read [the whole README of the main repository](https://github.com/microsoft/react-native-code-push/blob/master/README.md), since it contains many additional information for advanced scenarios, like how to handle Store policies, how to manage multiple deployment assignments, etc.
-[Here](https://github.com/microsoft/react-native-code-push/blob/master/docs/api-js.md), instead, you can find an overview of the JavaScript API, with many details on how to customize the update experience.
+Thanks to CodePush, you can be more agile in keeping your application up-to-date and deliver new features without having to redeploy a completely new package. Currently, App Center doesn't fully support the React Native for Windows implementation, but with a few workarounds you can still leverage it. I highly invite you to read [the whole README of the main repository](https://github.com/microsoft/react-native-code-push/blob/master/README.md), since it contains many additional information for advanced scenarios, like how to handle Store policies, how to manage multiple deployment assignments, etc.
+[Here](https://github.com/microsoft/react-native-code-push/blob/master/docs/api-js.md), instead, you can find an overview of the JavaScript APIs, with many details on how to customize the update experience.
 If you're looking for an example with a C++ based host app, you can refer to [the official one](https://github.com/microsoft/react-native-code-push/tree/master/Examples/CodePushDemoApp). A C# version of the sample, instead, can be found [here](https://github.com/qmatteoq/CodePushSample).
 
 Happy coding!
