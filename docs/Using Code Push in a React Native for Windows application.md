@@ -207,6 +207,9 @@ The reason is that, when you're debugging a React Native application, the Metro 
 
 To generate a relase version of the package, you can follow [this guidance](https://microsoft.github.io/react-native-windows/docs/getting-started#building-a-standalone-react-native-windows-app).
 
+**Important!** Before generating a release package, open the manifest of the app (double click on the Package.appxmanifest file in Visual Studio), move to the **Packaging** section and change the **Package name** field to a more friendly name.
+By default, the package name assigned to a new UWP app is a GUID, which makes the **Package Family Name** (the unique identifier of a packaged app) very long. Since the Package Family Name is used also to generate the folder where Windows stores the local data (including the updates downloaded from App Center), a very long name could lead CodePush to break and you might get errors like `The filename or extension is too long` when the updated bundle is being installed.
+
 ## Integrating the JavaScript APIs
 
 Now we are ready to start setting up CodePush in the JavaScript layer of the application. The key to enable it is to wrap the main `App` class or function (based on the approach you're using) inside the `codePush` one, like in the following examples:
